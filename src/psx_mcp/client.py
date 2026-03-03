@@ -8,45 +8,6 @@ from bs4 import BeautifulSoup
 import re
 from .models import TimeSeriesData
 
-SECTOR_MAP = {
-    "0819": "MODARABAS",
-    "0803": "CABLE & ELECTRICAL GOODS",
-    "0820": "OIL & GAS EXPLORATION COMPANIES",
-    "0826": "SUGAR & ALLIED INDUSTRIES",
-    "0829": "TEXTILE COMPOSITE",
-    "0808": "ENGINEERING",
-    "0825": "REFINERY",
-    "0831": "TEXTILE WEAVING",
-    "0806": "CLOSE - END MUTUAL FUND",
-    "0813": "INV. BANKS / INV. COS. / SECURITIES COS.",
-    "0821": "OIL & GAS MARKETING COMPANIES",
-    "0811": "GLASS & CERAMICS",
-    "0835": "WOOLLEN",
-    "0824": "POWER GENERATION & DISTRIBUTION",
-    "0804": "CEMENT",
-    "0832": "TOBACCO",
-    "0827": "SYNTHETIC & RAYON",
-    "0816": "LEATHER & TANNERIES",
-    "0828": "TECHNOLOGY & COMMUNICATION",
-    "0823": "PHARMACEUTICALS",
-    "0801": "AUTOMOBILE ASSEMBLER",
-    "0833": "TRANSPORT",
-    "0807": "COMMERCIAL BANKS",
-    "0814": "JUTE",
-    "0838": "PROPERTY",
-    "0805": "CHEMICAL",
-    "0834": "VANASPATI & ALLIED INDUSTRIES",
-    "0818": "MISCELLANEOUS",
-    "0836": "REAL ESTATE INVESTMENT TRUST",
-    "0837": "EXCHANGE TRADED FUNDS",
-    "0830": "TEXTILE SPINNING",
-    "0815": "LEASING COMPANIES",
-    "0810": "FOOD & PERSONAL CARE PRODUCTS",
-    "0802": "AUTOMOBILE PARTS & ACCESSORIES",
-    "0812": "INSURANCE",
-    "0822": "PAPER & BOARD",
-    "0809": "FERTILIZER",
-}
 
 class PSXClient:
     """Client for fetching data from PSX website"""
@@ -78,7 +39,7 @@ class PSXClient:
                     try:
                         stock_data = {
                             "symbol": cells[0].get_text(strip=True),
-                            "sector": SECTOR_MAP.get(cells[1].get_text(strip=True), cells[1].get_text(strip=True)),
+                            "sector": cells[1].get_text(strip=True),
                             "listed_in": cells[2].get_text(strip=True),
                             "ldcp": self._parse_float(cells[3].get_text(strip=True)),
                             "open_price": self._parse_float(cells[4].get_text(strip=True)),
