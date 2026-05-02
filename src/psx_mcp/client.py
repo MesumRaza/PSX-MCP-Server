@@ -48,6 +48,20 @@ SECTOR_MAP = {
     "0809": "FERTILIZER",
 }
 
+def extract_symbol(cell):
+    # Prefer <strong>
+    strong = cell.find('strong')
+    if strong:
+        return strong.get_text(strip=True)
+
+    # Fallback to <a>
+    anchor = cell.find('a', class_='tbl__symbol')
+    if anchor:
+        return anchor.get_text(strip=True)
+
+    # Last fallback (may include XD, etc.)
+    return cell.get_text(strip=True)
+
 class PSXClient:
     """Client for fetching data from PSX website"""
 
@@ -77,7 +91,7 @@ class PSXClient:
                 if len(cells) >= 9:  # Ensure we have enough columns
                     try:
                         stock_data = {
-                            "symbol": cells[0].get_text(strip=True),
+                            "symbol": extract_symbol(cells[0]),
                             "sector": SECTOR_MAP.get(cells[1].get_text(strip=True), cells[1].get_text(strip=True)),
                             "listed_in": cells[2].get_text(strip=True),
                             "ldcp": self._parse_float(cells[3].get_text(strip=True)),
