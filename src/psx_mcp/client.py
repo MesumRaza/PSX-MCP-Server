@@ -49,18 +49,11 @@ SECTOR_MAP = {
 }
 
 def extract_symbol(cell):
-    # Prefer <strong>
-    strong = cell.find('strong')
-    if strong:
-        return strong.get_text(strip=True)
-
-    # Fallback to <a>
-    anchor = cell.find('a', class_='tbl__symbol')
+    anchor = cell.select_one('a.tbl__symbol strong')
     if anchor:
-        return anchor.get_text(strip=True)
+        return anchor.text.strip()
 
-    # Last fallback (may include XD, etc.)
-    return cell.get_text(strip=True)
+    return cell.select_one('a.tbl__symbol').text.strip()
 
 class PSXClient:
     """Client for fetching data from PSX website"""
