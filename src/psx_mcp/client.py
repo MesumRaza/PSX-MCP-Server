@@ -3,6 +3,8 @@ PSX API Client for fetching market data
 """
 
 import csv
+from io import StringIO
+
 import httpx
 from typing import List, Dict, Any
 from bs4 import BeautifulSoup
