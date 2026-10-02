@@ -129,36 +129,36 @@ class PSXClient:
                 f"Failed to parse market watch data: {str(e)}"
             ) from e
 
-@staticmethod
-def _parse_float(value: Any) -> float:
-    if value is None:
-        return 0.0
+    @staticmethod
+    def _parse_float(value: Any) -> float:
+        if value is None:
+            return 0.0
 
-    value = str(value).strip().replace(",", "")
+        value = str(value).strip().replace(",", "")
 
-    if not value or value in {"-", "N/A", "NA", "null"}:
-        return 0.0
+        if not value or value in {"-", "N/A", "NA", "null"}:
+            return 0.0
 
-    try:
-        return float(value)
-    except (ValueError, TypeError):
-        return 0.0
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return 0.0
 
 
-@staticmethod
-def _parse_int(value: Any) -> int:
-    if value is None:
-        return 0
+    @staticmethod
+    def _parse_int(value: Any) -> int:
+        if value is None:
+            return 0
 
-    value = str(value).strip().replace(",", "")
+        value = str(value).strip().replace(",", "")
 
-    if not value or value in {"-", "N/A", "NA", "null"}:
-        return 0
+        if not value or value in {"-", "N/A", "NA", "null"}:
+            return 0
 
-    try:
-        return int(float(value))
-    except (ValueError, TypeError):
-        return 0
+        try:
+            return int(float(value))
+        except (ValueError, TypeError):
+            return 0
 
     async def get_intraday_data(self, symbol: str) -> List[Dict[str, Any]]:
         """Fetch intraday time series data for a specific stock"""
