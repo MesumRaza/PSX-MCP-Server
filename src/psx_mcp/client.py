@@ -73,6 +73,17 @@ class PSXClient:
             follow_redirects=True,
         )
 
+        self.headers = {
+            "Accept": "application/json, text/javascript, */*; q=0.01",
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/154.0.0.0 Safari/537.36"
+            ),
+            "X-Requested-With": "XMLHttpRequest",
+            "X-Req-Id": "cMsMszi5JC581pgLE27dRLlqM5TgwTo7pTuLaVVED_o",
+        }
+
     async def get_market_watch_data(self) -> List[Dict[str, Any]]:
         """Fetch market watch data from Google Sheets CSV."""
 
@@ -81,6 +92,24 @@ class PSXClient:
             response.raise_for_status()
 
             reader = csv.DictReader(StringIO(response.text))
+
+            # Fetch PSX symbol names using PSX headers
+            symbols_response = await self.client.get(
+                "https://dps.psx.com.pk/symbols",
+                headers=self.headers,
+            )
+            symbols_response.raise_for_status()
+
+            symbols_data = symbols_response.json()
+
+            # Create symbol -> name mapping
+            symbol_names = {
+                item["symbol"].strip().upper(): item["name"].strip()
+                for item in symbols_data
+                if isinstance(item, dict)
+                and item.get("symbol")
+                and item.get("name")
+            }
 
             stocks = []
 
@@ -93,6 +122,8 @@ class PSXClient:
 
                     stock_data = {
                         "symbol": symbol,
+                        "name": symbol_names.get(symbol.upper()),
+
                         "sector": SECTOR_MAP.get(
                             (row.get("Sector") or "").strip(),
                             (row.get("Sector") or "").strip()
