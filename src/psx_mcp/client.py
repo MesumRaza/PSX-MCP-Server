@@ -2,6 +2,7 @@
 PSX API Client for fetching market data
 """
 
+import csv
 import httpx
 from typing import List, Dict, Any
 from bs4 import BeautifulSoup
@@ -126,27 +127,36 @@ class PSXClient:
                 f"Failed to parse market watch data: {str(e)}"
             ) from e
 
-    def _parse_float(self, text: str) -> float:
-        """Parse float value from text, handling commas and other formatting"""
-        if not text or text == '-':
-            return 0.0
-        # Remove commas and other formatting
-        cleaned = re.sub(r'[^\d.-]', '', text)
-        try:
-            return float(cleaned)
-        except ValueError:
-            return 0.0
+@staticmethod
+def _parse_float(value: Any) -> float:
+    if value is None:
+        return 0.0
 
-    def _parse_int(self, text: str) -> int:
-        """Parse integer value from text, handling commas and other formatting"""
-        if not text or text == '-':
-            return 0
-        # Remove commas and other formatting
-        cleaned = re.sub(r'[^\d]', '', text)
-        try:
-            return int(cleaned)
-        except ValueError:
-            return 0
+    value = str(value).strip().replace(",", "")
+
+    if not value or value in {"-", "N/A", "NA", "null"}:
+        return 0.0
+
+    try:
+        return float(value)
+    except (ValueError, TypeError):
+        return 0.0
+
+
+@staticmethod
+def _parse_int(value: Any) -> int:
+    if value is None:
+        return 0
+
+    value = str(value).strip().replace(",", "")
+
+    if not value or value in {"-", "N/A", "NA", "null"}:
+        return 0
+
+    try:
+        return int(float(value))
+    except (ValueError, TypeError):
+        return 0
 
     async def get_intraday_data(self, symbol: str) -> List[Dict[str, Any]]:
         """Fetch intraday time series data for a specific stock"""
