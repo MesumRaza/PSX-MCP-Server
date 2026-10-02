@@ -71,60 +71,60 @@ class PSXClient:
         )
 
     async def get_market_watch_data(self) -> List[Dict[str, Any]]:
-    """Fetch market watch data from Google Sheets CSV."""
+        """Fetch market watch data from Google Sheets CSV."""
 
-    try:
-        response = await self.client.get(self.sheet_url)
-        response.raise_for_status()
+        try:
+            response = await self.client.get(self.sheet_url)
+            response.raise_for_status()
 
-        reader = csv.DictReader(StringIO(response.text))
+            reader = csv.DictReader(StringIO(response.text))
 
-        stocks = []
+            stocks = []
 
-        for row in reader:
-            try:
-                symbol = (row.get("Symbol") or "").strip()
+            for row in reader:
+                try:
+                    symbol = (row.get("Symbol") or "").strip()
 
-                if not symbol:
+                    if not symbol:
+                        continue
+
+                    stock_data = {
+                        "symbol": symbol,
+                        "sector": SECTOR_MAP.get(
+                            (row.get("Sector") or "").strip(),
+                            (row.get("Sector") or "").strip()
+                        ),
+                        "listed_in": (row.get("ListedIn") or "").strip(),
+
+                        "ldcp": self._parse_float(row.get("LDCP")),
+                        "open_price": self._parse_float(row.get("Open")),
+                        "high_price": self._parse_float(row.get("High")),
+                        "low_price": self._parse_float(row.get("Low")),
+                        "current_price": self._parse_float(row.get("Current")),
+                        "change": self._parse_float(row.get("Change")),
+                        "change_percent": 0.0,
+                        "volume": self._parse_int(row.get("Volume")),
+
+                        "last_updated": (row.get("LastUpdated") or "").strip(),
+                        "source": (row.get("Source") or "").strip(),
+                    }
+
+                    stocks.append(stock_data)
+
+                except (ValueError, TypeError, IndexError):
                     continue
 
-                stock_data = {
-                    "symbol": symbol,
-                    "sector": SECTOR_MAP.get(
-                        (row.get("Sector") or "").strip(),
-                        (row.get("Sector") or "").strip()
-                    ),
-                    "listed_in": (row.get("ListedIn") or "").strip(),
+            return stocks
 
-                    "ldcp": self._parse_float(row.get("LDCP")),
-                    "open_price": self._parse_float(row.get("Open")),
-                    "high_price": self._parse_float(row.get("High")),
-                    "low_price": self._parse_float(row.get("Low")),
-                    "current_price": self._parse_float(row.get("Current")),
-                    "change": self._parse_float(row.get("Change")),
-                    "change_percent": 0.0,
-                    "volume": self._parse_int(row.get("Volume")),
+        except httpx.HTTPError as e:
+            raise Exception(
+                f"Failed to fetch market watch CSV: {str(e)}"
+            ) from e
 
-                    "last_updated": (row.get("LastUpdated") or "").strip(),
-                    "source": (row.get("Source") or "").strip(),
-                }
-
-                stocks.append(stock_data)
-
-            except (ValueError, TypeError, IndexError):
-                continue
-
-        return stocks
-
-    except httpx.HTTPError as e:
-        raise Exception(
-            f"Failed to fetch market watch CSV: {str(e)}"
-        ) from e
-
-    except Exception as e:
-        raise Exception(
-            f"Failed to parse market watch data: {str(e)}"
-        ) from e
+        except Exception as e:
+            raise Exception(
+                f"Failed to parse market watch data: {str(e)}"
+            ) from e
 
     def _parse_float(self, text: str) -> float:
         """Parse float value from text, handling commas and other formatting"""
