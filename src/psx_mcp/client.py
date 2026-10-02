@@ -59,52 +59,72 @@ class PSXClient:
     """Client for fetching data from PSX website"""
 
     def __init__(self):
-        self.base_url = "https://dps.psx.com.pk"
-        self.client = httpx.AsyncClient(timeout=30.0)
+        self.sheet_url = (
+            "https://docs.google.com/spreadsheets/d/"
+            "1ByvO8hbeqSH8FQLbv_LDt98HRe2o-e28jOLx8KKRjXw"
+            "/export?format=csv&gid=2105131278"
+        )
+
+        self.client = httpx.AsyncClient(
+            timeout=30.0,
+            follow_redirects=True,
+        )
 
     async def get_market_watch_data(self) -> List[Dict[str, Any]]:
-        """Fetch market watch data for all stocks"""
-        try:
-            response = await self.client.get(f"{self.base_url}/market-watch")
-            response.raise_for_status()
+    """Fetch market watch data from Google Sheets CSV."""
 
-            # Parse HTML response
-            soup = BeautifulSoup(response.text, 'html.parser')
-            
-            # Find the market data table
-            table = soup.find('table', {'id': 'marketWatchTable'}) or soup.find('table')
-            if not table:
-                raise Exception("Market data table not found in HTML response")
+    try:
+        response = await self.client.get(self.sheet_url)
+        response.raise_for_status()
 
-            stocks = []
-            rows = table.find_all('tr')[1:]  # Skip header row
-            
-            for row in rows:
-                cells = row.find_all(['td', 'th'])
-                if len(cells) >= 9:  # Ensure we have enough columns
-                    try:
-                        stock_data = {
-                            "symbol": extract_symbol(cells[0]),
-                            "sector": SECTOR_MAP.get(cells[1].get_text(strip=True), cells[1].get_text(strip=True)),
-                            "listed_in": cells[2].get_text(strip=True),
-                            "ldcp": self._parse_float(cells[3].get_text(strip=True)),
-                            "open_price": self._parse_float(cells[4].get_text(strip=True)),
-                            "high_price": self._parse_float(cells[5].get_text(strip=True)),
-                            "low_price": self._parse_float(cells[6].get_text(strip=True)),
-                            "current_price": self._parse_float(cells[7].get_text(strip=True)),
-                            "change": self._parse_float(cells[8].get_text(strip=True)),
-                            "change_percent": self._parse_float(cells[9].get_text(strip=True)) if len(cells) > 9 else 0.0,
-                            "volume": self._parse_int(cells[10].get_text(strip=True)) if len(cells) > 10 else 0,
-                        }
-                        stocks.append(stock_data)
-                    except (ValueError, IndexError) as e:
-                        # Skip rows with invalid data
-                        continue
+        reader = csv.DictReader(StringIO(response.text))
 
-            return stocks
+        stocks = []
 
-        except Exception as e:
-            raise Exception(f"Failed to fetch market watch data: {str(e)}")
+        for row in reader:
+            try:
+                symbol = (row.get("Symbol") or "").strip()
+
+                if not symbol:
+                    continue
+
+                stock_data = {
+                    "symbol": symbol,
+                    "sector": SECTOR_MAP.get(
+                        (row.get("Sector") or "").strip(),
+                        (row.get("Sector") or "").strip()
+                    ),
+                    "listed_in": (row.get("ListedIn") or "").strip(),
+
+                    "ldcp": self._parse_float(row.get("LDCP")),
+                    "open_price": self._parse_float(row.get("Open")),
+                    "high_price": self._parse_float(row.get("High")),
+                    "low_price": self._parse_float(row.get("Low")),
+                    "current_price": self._parse_float(row.get("Current")),
+                    "change": self._parse_float(row.get("Change")),
+                    "change_percent": 0.0,
+                    "volume": self._parse_int(row.get("Volume")),
+
+                    "last_updated": (row.get("LastUpdated") or "").strip(),
+                    "source": (row.get("Source") or "").strip(),
+                }
+
+                stocks.append(stock_data)
+
+            except (ValueError, TypeError, IndexError):
+                continue
+
+        return stocks
+
+    except httpx.HTTPError as e:
+        raise Exception(
+            f"Failed to fetch market watch CSV: {str(e)}"
+        ) from e
+
+    except Exception as e:
+        raise Exception(
+            f"Failed to parse market watch data: {str(e)}"
+        ) from e
 
     def _parse_float(self, text: str) -> float:
         """Parse float value from text, handling commas and other formatting"""
