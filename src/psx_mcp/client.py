@@ -93,23 +93,29 @@ class PSXClient:
 
             reader = csv.DictReader(StringIO(response.text))
 
-            # Fetch PSX symbol names using PSX headers
-            symbols_response = await self.client.get(
-                "https://dps.psx.com.pk/symbols",
-                headers=self.headers,
-            )
-            symbols_response.raise_for_status()
+            # Fetch PSX symbol names.
+            # If this fails, continue without symbol names.
+            symbol_names = {}
 
-            symbols_data = symbols_response.json()
+            try:
+                symbols_response = await self.client.get(
+                    "https://dps.psx.com.pk/symbols",
+                    headers=self.headers,
+                )
+                symbols_response.raise_for_status()
 
-            # Create symbol -> name mapping
-            symbol_names = {
-                item["symbol"].strip().upper(): item["name"].strip()
-                for item in symbols_data
-                if isinstance(item, dict)
-                and item.get("symbol")
-                and item.get("name")
-            }
+                symbols_data = symbols_response.json()
+
+                symbol_names = {
+                    item["symbol"].strip().upper(): item["name"].strip()
+                    for item in symbols_data
+                    if isinstance(item, dict)
+                    and item.get("symbol")
+                    and item.get("name")
+                }
+
+            except Exception:
+                pass
 
             stocks = []
 
